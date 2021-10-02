@@ -13,29 +13,34 @@ public class GameManager : MonoBehaviour
             {
                 _instance = FindObjectOfType<GameManager>();
             }
-
             return _instance;
         }
     }
 
-    // Fungsi [Range (min, max)] ialah menjaga value agar tetap berada di antara min dan max-nya
+    // Fungsi [Range (min, max)] ialah menjaga value agar tetap berada di antara min dan max-nya 
     [Range(0f, 1f)]
+
     public float AutoCollectPercentage = 0.1f;
+    public float SaveDelay = 5f;
     public ResourceConfig[] ResourcesConfigs;
     public Sprite[] ResourcesSprites;
 
     public Transform ResourcesParent;
+    public Transform CoinIcon;
     public ResourceController ResourcePrefab;
     public TapText TapTextPrefab;
-
-    public Transform CoinIcon;
     public Text GoldInfo;
     public Text AutoCollectInfo;
 
     private List<ResourceController> _activeResources = new List<ResourceController>();
     private List<TapText> _tapTextPool = new List<TapText>();
-    private float _collectSecond;
 
+    private float _collectSecond;
+    private float _saveDelayCounter;
+
+    public double TotalGold { get; private set; }
+
+    // Start is called before the first frame update
     private void Start()
     {
         AddAllResources();
@@ -43,18 +48,20 @@ public class GameManager : MonoBehaviour
         GoldInfo.text = $"Gold: { UserDataManager.Progress.Gold.ToString("0") }";
     }
 
+    // Update is called once per frame
     private void Update()
     {
-        // Fungsi untuk selalu mengeksekusi CollectPerSecond setiap detik
-        _collectSecond += Time.unscaledDeltaTime;
+        float deltaTime = Time.unscaledDeltaTime;
+        _saveDelayCounter -= deltaTime;
+
+        // Fungsi untuk selalu mengeksekusi CollectPerSecond setiap detik 
+        _collectSecond += deltaTime;
         if (_collectSecond >= 1f)
         {
             CollectPerSecond();
             _collectSecond = 0f;
         }
-
         CheckResourceCost();
-
         CoinIcon.transform.localScale = Vector3.LerpUnclamped(CoinIcon.transform.localScale, Vector3.one * 2f, 0.15f);
         CoinIcon.transform.Rotate(0f, 0f, Time.deltaTime * -100f);
     }
@@ -106,7 +113,6 @@ public class GameManager : MonoBehaviour
             {
                 isBuyable = UserDataManager.Progress.Gold >= resource.GetUnlockCost();
             }
-
             resource.ResourceImage.sprite = ResourcesSprites[isBuyable ? 1 : 0];
         }
     }
@@ -121,11 +127,9 @@ public class GameManager : MonoBehaviour
                 output += resource.GetOutput();
             }
         }
-
         output *= AutoCollectPercentage;
-        // Fungsi ToString("F1") ialah membulatkan angka menjadi desimal yang memiliki 1 angka di belakang koma
+        // Fungsi ToString("F1") ialah membulatkan angka menjadi desimal yang memiliki 1 angka di belakang koma 
         AutoCollectInfo.text = $"Auto Collect: { output.ToString("F1") } / second";
-
         AddGold(output);
     }
 
@@ -133,7 +137,12 @@ public class GameManager : MonoBehaviour
     {
         UserDataManager.Progress.Gold += value;
         GoldInfo.text = $"Gold: { UserDataManager.Progress.Gold.ToString("0") }";
-        UserDataManager.Save();
+        UserDataManager.Save(_saveDelayCounter < 0f);
+
+        if (_saveDelayCounter < 0f)
+        {
+            _saveDelayCounter = SaveDelay;
+        }
     }
 
     public void CollectByTap(Vector3 tapPosition, Transform parent)
@@ -146,7 +155,6 @@ public class GameManager : MonoBehaviour
                 output += resource.GetOutput();
             }
         }
-
         TapText tapText = GetOrCreateTapText();
         tapText.transform.SetParent(parent, false);
         tapText.transform.position = tapPosition;
@@ -159,16 +167,18 @@ public class GameManager : MonoBehaviour
     }
 
     private TapText GetOrCreateTapText()
+
     {
         TapText tapText = _tapTextPool.Find(t => !t.gameObject.activeSelf);
+
         if (tapText == null)
+
         {
             tapText = Instantiate(TapTextPrefab).GetComponent<TapText>();
             _tapTextPool.Add(tapText);
         }
-
         return tapText;
-    }
+    }  
 }
 
 // Fungsi System.Serializable adalah agar object bisa di-serialize dan

@@ -8,7 +8,6 @@ public class ResourceController : MonoBehaviour
     public Text ResourceDescription;
     public Text ResourceUpgradeCost;
     public Text ResourceUnlockCost;
-
     private ResourceConfig _config;
 
     private int _index;
@@ -18,7 +17,7 @@ public class ResourceController : MonoBehaviour
         {
             // Menyimpan value yang di set ke _level pada Progress Data
             UserDataManager.Progress.ResourcesLevels[_index] = value;
-            UserDataManager.Save();
+            UserDataManager.Save(true);
         }
 
         get
@@ -69,12 +68,10 @@ public class ResourceController : MonoBehaviour
     {
         return _config.Output * _level;
     }
-
     public double GetUpgradeCost()
     {
         return _config.UpgradeCost * _level;
     }
-
     public double GetUnlockCost()
     {
         return _config.UnlockCost;
@@ -87,12 +84,13 @@ public class ResourceController : MonoBehaviour
         {
             return;
         }
-
         GameManager.Instance.AddGold(-upgradeCost);
         _level++;
 
         ResourceUpgradeCost.text = $"Upgrade Cost\n{ GetUpgradeCost() }";
         ResourceDescription.text = $"{ _config.Name } Lv. { _level }\n+{ GetOutput().ToString("0") }";
+
+        AnalyticsManager.LogUpgradeEvent(_index, _level);
     }
 
     public void UnlockResource()
@@ -106,6 +104,8 @@ public class ResourceController : MonoBehaviour
         SetUnlocked(true);
         GameManager.Instance.ShowNextResource();
         AchievementController.Instance.UnlockAchievement(AchievementType.UnlockResource, _config.Name);
+
+        AnalyticsManager.LogUnlockEvent(_index);
     }
 
     public void SetUnlocked(bool unlocked)
@@ -113,11 +113,11 @@ public class ResourceController : MonoBehaviour
         IsUnlocked = unlocked;
         if (unlocked)
         {
-            // Jika resources baru di unlock dan belum ada di Progress Data, maka tambahkan data baru
+            // Jika resources baru di unlock dan belum ada di Progress Data, maka tambahkan data
             if (!UserDataManager.HasResources(_index))
             {
                 UserDataManager.Progress.ResourcesLevels.Add(_level);
-                UserDataManager.Save();
+                UserDataManager.Save(true);
             }
         }
 
