@@ -5,5 +5,5 @@
 - Build version 1.0
 - Firebase version Unity Latest 8.3.0
 
-Go to this wiki repository:  
-https://github.com/fadhilhasbi/agt08-incrementalwithfirebase/wiki
+For detailed information about this version, you can see our Technical Design Documentation by visit this wiki repository here:  
+https://github.com/fadhilhasbi/agt08-incrementalwithfirebase/wiki/Technical-Design-Document
